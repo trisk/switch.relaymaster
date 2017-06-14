@@ -137,5 +137,5 @@ class RelayMasterInput(Entity):
         tag = INPUT_NODE.format(self._number)
         for child in self._board.data:
             if child.tag == tag:
-                self._state = int(child.text) == "up"
+                self._state = child.text == "up"
                 break
