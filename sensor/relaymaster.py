@@ -133,6 +133,11 @@ class RelayMasterAnalogInput(Entity):
         """Return the name of the input."""
         return self._name.replace(".", " ").title()
 
+    @property
+    def state(self):
+        """Return the state of the input."""
+        return self._state
+
     def update(self):
         """Update the state of the input."""
         self._board.update()
