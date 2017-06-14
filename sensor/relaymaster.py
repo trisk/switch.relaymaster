@@ -25,9 +25,8 @@ CONF_BASE_NUMBER = 'base_number'
 CONF_IGNORE_UNUSED = 'ignore_unused'
 DEVICE_CONFIG_ENDPOINT = '/ioconf.xml'
 DEVICE_STATE_ENDPOINT = '/ajax.xml'
-INPUT_NODE_REGEX = '^i([0-9]+)$'
-INPUT_NODE = 'i{}'
 UNUSED_INPUT_REGEX = '^(ANINP|INPUT)_[0-9]+_'
+INPUT_NODE_REGEX = '^i([0-9]+)$'
 ANALOG_INPUT_NODE = 'a{}'
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=1)
 
