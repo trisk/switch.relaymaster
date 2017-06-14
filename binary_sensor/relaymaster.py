@@ -1,5 +1,5 @@
 """
-Support for RelayMaster analog inputs.
+Support for RelayMaster inputs.
 
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.relaymaster/
@@ -13,8 +13,8 @@ import requests
 import voluptuous as vol
 
 from homeassistant.const import (CONF_URL, CONF_USERNAME, CONF_PASSWORD)
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.binary_sensor import (BinarySensorDevice,
+                                                    PLATFORM_SCHEMA)
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
 
@@ -115,7 +115,7 @@ class RelayMasterBoard(object):
 
         return response
 
-class RelayMasterInput(Entity):
+class RelayMasterInput(BinarySensorDevice):
     """Representation of a RelayMaster input."""
 
     def __init__(self, board, number, name):
