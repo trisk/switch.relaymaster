@@ -20,6 +20,7 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_MAX_NUMBER = 'max_number'
 CONF_IGNORE_UNUSED = 'ignore_unused'
 DEVICE_CONFIG_ENDPOINT = '/ioconf.xml'
 DEVICE_STATE_ENDPOINT = '/ajax.xml'
@@ -32,6 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_URL): cv.url,
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
+    vol.Optional(CONF_MAX_NUMBER, default=12): cv.positive_int,
     vol.Optional(CONF_IGNORE_UNUSED, default=True): cv.boolean
 })
 
@@ -41,6 +43,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the relay board inputs."""
     import re
 
+    max_number = config.get(CONF_MAX_NUMBER)
     ignore = config.get(CONF_IGNORE_UNUSED)
     base_url = config.get(CONF_URL).rstrip('/')
     username = config.get(CONF_USERNAME)
@@ -68,6 +71,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         if not match:
             continue
         number = int(match.group(1))
+        if number > max_number:
+            continue
         if ignore and re.match(UNUSED_INPUT_REGEX, child.text):
             continue
         inputs.append(RelayMasterInput(board, number, child.text))
