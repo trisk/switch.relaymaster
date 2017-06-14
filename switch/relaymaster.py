@@ -27,7 +27,7 @@ RELAY_NODE = 'r{}'
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_URL): cv.string,
+    vol.Required(CONF_URL): cv.url,
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string
 })
