@@ -7,12 +7,14 @@ https://home-assistant.io/components/switch.relaymaster/
 
 import logging
 import xml.etree.ElementTree as ET
+from datetime import timedelta
 
 import requests
 import voluptuous as vol
 
 from homeassistant.components.switch import (SwitchDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (CONF_URL, CONF_USERNAME, CONF_PASSWORD)
+from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ DEVICE_STATE_ENDPOINT = '/ajax.xml'
 RELAY_TOGGLE_ENDPOINT = '/cgi/relays.cgi'
 OUTPUT_NODE_REGEX = '^o[0-9]+$'
 RELAY_NODE = 'r{}'
+MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_URL): cv.string,
@@ -30,6 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
+# pylint: disable=unused-argument
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the relay board switches."""
     import re
@@ -38,29 +42,24 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     username = config.get(CONF_USERNAME)
     password = config.get(CONF_PASSWORD)
 
-    endpoint = base_url + DEVICE_CONFIG_ENDPOINT
     session = requests.Session()
     session.auth = requests.auth.HTTPBasicAuth(username, password)
-    response = None
+    board = RelayMasterBoard(session, base_url)
 
+    response = None
     try:
-        response = session.get(endpoint, timeout=10)
+        response = board.get(DEVICE_CONFIG_ENDPOINT)
     except requests.exceptions.MissingSchema:
         _LOGGER.error("Missing resource or schema in configuration. "
                       "Add http:// to your URL")
         return False
-    except requests.exceptions.ConnectionError:
-        _LOGGER.error("No route to device at %s", base_url)
-        return False
 
-    if response.status_code != 200:
-        _LOGGER.warning("Request error for %s: %s", endpoint, response.text)
+    if response is None:
         return False
 
     relays = []
 
-    root = ET.fromstring(response.text)
-    for child in root:
+    for child in ET.fromstring(response.text):
         if not re.match(OUTPUT_NODE_REGEX, child.tag):
             continue
         config = child.text.split(';')
@@ -69,23 +68,55 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         if pair[0] == 0:
             continue
         if pair[1] != 0:
-            relays.append(RelayDevice(session, base_url, pair[0],
-                                      name + ' A'))
-            relays.append(RelayDevice(session, base_url, pair[1],
-                                      name + ' B'))
+            relays.append(RelayMasterRelay(board, pair[0], name + ' A'))
+            relays.append(RelayMasterRelay(board, pair[1], name + ' B'))
         else:
-            relays.append(RelayDevice(session, base_url, pair[0], name))
+            relays.append(RelayMasterRelay(board, pair[0], name))
 
     add_devices(relays)
 
+class RelayMasterBoard(object):
+    """Representation of board state."""
 
-class RelayDevice(SwitchDevice):
-    """Representation of a RelayMaster relay."""
-
-    def __init__(self, session, base_url, number, name):
-        """Initialize the switch."""
+    def __init__(self, session, base_url):
+        """Initialize the board object."""
         self._session = session
         self._base_url = base_url
+        self.data = None
+
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    def update(self):
+        """Update the board data."""
+        response = self.get(DEVICE_STATE_ENDPOINT)
+        if response is None:
+            return
+
+        self.data = ET.fromstring(response.text)
+
+    def get(self, endpoint, params=None):
+        """Send request to board."""
+        url = self._base_url + endpoint
+        response = None
+
+        try:
+            response = self._session.get(url, timeout=10, params=params)
+        except requests.exceptions.ConnectionError:
+            _LOGGER.warning("No route to device %s", self._base_url)
+            return None
+
+        if response.status_code != 200:
+            _LOGGER.warning("Request error for %s: %s",
+                            response.url, response.text)
+            return None
+
+        return response
+
+class RelayMasterRelay(SwitchDevice):
+    """Representation of a RelayMaster relay."""
+
+    def __init__(self, board, number, name):
+        """Initialize the switch."""
+        self._board = board
         self._number = number
         self._name = name
         self._state = None
@@ -105,12 +136,9 @@ class RelayDevice(SwitchDevice):
         if self._state:
             return
 
-        endpoint = self._base_url + RELAY_TOGGLE_ENDPOINT
-        response = self._session.get(endpoint, timeout=10,
-                                     params={'rel': self._number})
-        if response.status_code != 200:
-            _LOGGER.warning("Request error for %s: %s",
-                            endpoint, response.text)
+        response = self._board.get(RELAY_TOGGLE_ENDPOINT,
+                                   params={'rel': self._number})
+        if response is None:
             return
 
         self._state = True
@@ -120,34 +148,18 @@ class RelayDevice(SwitchDevice):
         if not self._state:
             return
 
-        endpoint = self._base_url + RELAY_TOGGLE_ENDPOINT
-        response = self._session.get(endpoint, timeout=10,
-                                     params={'rel': self._number})
-        if response.status_code != 200:
-            _LOGGER.warning("Request error for %s: %s",
-                            endpoint, response.text)
+        response = self._board.get(RELAY_TOGGLE_ENDPOINT,
+                                   params={'rel': self._number})
+        if response is None:
             return
 
         self._state = False
 
     def update(self):
         """Update the state of the relay."""
-        endpoint = self._base_url + DEVICE_STATE_ENDPOINT
-        response = None
+        self._board.update()
 
-        try:
-            response = self._session.get(endpoint, timeout=10)
-        except requests.exceptions.ConnectionError:
-            _LOGGER.warning("No route to device %s", self._resource)
-            return
-
-        if response.status_code != 200:
-            _LOGGER.warning("Request error for %s: %s",
-                            endpoint, response.text)
-            return
-
-        root = ET.fromstring(response.text)
-        for child in root:
+        for child in self._board.data:
             if child.tag == RELAY_NODE.format(self._number):
                 self._state = int(child.text) == 1
                 break
