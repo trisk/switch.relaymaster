@@ -19,12 +19,13 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+MIN_TIME_BETWEEN_UPDATES = timedelta(milliseconds=100)
+
 DEVICE_CONFIG_ENDPOINT = '/ioconf.xml'
 DEVICE_STATE_ENDPOINT = '/ajax.xml'
 RELAY_TOGGLE_ENDPOINT = '/cgi/relays.cgi'
 OUTPUT_NODE_REGEX = '^o[0-9]+$'
 RELAY_NODE = 'r{}'
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_URL): cv.url,

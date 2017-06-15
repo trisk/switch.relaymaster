@@ -20,6 +20,9 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+SCAN_INTERVAL = timedelta(seconds=1)
+MIN_TIME_BETWEEN_UPDATES = timedelta(milliseconds=100)
+
 CONF_MAX_NUMBER = 'max_number'
 CONF_IGNORE_UNUSED = 'ignore_unused'
 DEVICE_CONFIG_ENDPOINT = '/ioconf.xml'
@@ -27,7 +30,6 @@ DEVICE_STATE_ENDPOINT = '/ajax.xml'
 UNUSED_INPUT_REGEX = '^(ANINP|INPUT)_[0-9]+_'
 INPUT_NODE_REGEX = '^i([0-9]+)$'
 INPUT_NODE = 'i{}'
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_URL): cv.url,
