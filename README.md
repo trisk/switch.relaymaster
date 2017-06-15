@@ -9,6 +9,12 @@ sharing: true
 footer: true
 ---
 
+RelayMaster platforms for Home Assistant
+========================================
+These components support Domotika home automation control boards running RelayMaster firmware that exposes `/ajax.xml` and `ioconf.xml`.
+
+Work sponsored by Igor Guida.
+
 The `relaymaster` switch platform allows you to control the relays of a Domotika control board running RelayMaster firmware.
 
 To use your RelayMaster board with configured relays, add the following to your `configuration.yaml` file:
