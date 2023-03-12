@@ -13,7 +13,7 @@ import requests
 import voluptuous as vol
 
 from homeassistant.const import (CONF_URL, CONF_USERNAME, CONF_PASSWORD)
-from homeassistant.components.binary_sensor import (BinarySensorDevice,
+from homeassistant.components.binary_sensor import (BinarySensorEntity,
                                                     PLATFORM_SCHEMA)
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
@@ -117,7 +117,7 @@ class RelayMasterBoard(object):
 
         return response
 
-class RelayMasterInput(BinarySensorDevice):
+class RelayMasterInput(BinarySensorEntity):
     """Representation of a RelayMaster input."""
 
     def __init__(self, board, number, name):
