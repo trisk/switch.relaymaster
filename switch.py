@@ -12,7 +12,7 @@ from datetime import timedelta
 import requests
 import voluptuous as vol
 
-from homeassistant.components.switch import (SwitchDevice, PLATFORM_SCHEMA)
+from homeassistant.components.switch import (SwitchEntity, PLATFORM_SCHEMA)
 from homeassistant.const import (CONF_URL, CONF_USERNAME, CONF_PASSWORD)
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
@@ -112,7 +112,7 @@ class RelayMasterBoard(object):
 
         return response
 
-class RelayMasterRelay(SwitchDevice):
+class RelayMasterRelay(SwitchEntity):
     """Representation of a RelayMaster relay."""
 
     def __init__(self, board, number, name):
